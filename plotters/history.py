@@ -7,7 +7,7 @@ from hashwars import write_plot
 
 _parser = ArgumentParser(description="Plot of a blockchain launch's history.")
 
-def blockchain_launch_history(results, output_file, argv):
+def history(results, output_file, argv):
     (
         distance,
         hashrate_ratio,

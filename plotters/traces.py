@@ -17,7 +17,7 @@ _parser.add_argument("-l", "--labels", type=_comma_separated, help="smooth this 
 def _moving_average(series, window):
     return convolve(series, ones(window), 'valid') / window
 
-def hashrate_distance_slices(results, output_file, argv):
+def traces(results, output_file, argv):
     (
         distances,
         hashrate_ratios,

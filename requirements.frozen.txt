@@ -1,3 +1,4 @@
+adaptive==0.8.1
 atomicwrites==1.3.0
 attrs==19.1.0
 cycler==0.10.0
@@ -19,6 +20,9 @@ pyflakes==2.1.1
 pyparsing==2.4.0
 pytest==4.4.0
 python-dateutil==2.8.0
+scipy==1.3.0
 six==1.12.0
+sortedcollections==1.1.2
+sortedcontainers==2.1.0
 typed-ast==1.3.5
 zipp==0.5.2

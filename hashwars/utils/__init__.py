@@ -22,6 +22,8 @@ def write_results(results, output_file):
             stdout.buffer.write(output)
 
 def read_results(input_file):
+    if input_file is None and stdin.isatty():
+        return []
     return loads((input_file or stdin.buffer).read())
 
 def write_plot(output_file):
@@ -48,3 +50,23 @@ def notify(string):
     stderr.write(string)
     stderr.write("\n")
     stderr.flush()
+
+def format_timestamp(timestamp):
+    return timestamp.strftime("%Y-%m-%d %H:%M:%S")
+
+DAY = 86400
+HOUR = 3600
+MINUTE = 60
+
+def format_duration(total_seconds):
+    if total_seconds > DAY:
+        days = (total_seconds // DAY)
+        return "{}d{}".format(days, format_duration(total_seconds - (days * DAY)))
+    elif total_seconds > HOUR:
+        hours = (total_seconds // HOUR)
+        return "{}h{}".format(hours, format_duration(total_seconds - (hours * HOUR)))
+    elif total_seconds > MINUTE:
+        minutes = (total_seconds // MINUTE)
+        return "{}m{}".format(minutes, format_duration(total_seconds - (minutes * MINUTE)))
+    else:
+        return "{}s".format(int(total_seconds))

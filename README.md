@@ -38,6 +38,7 @@ Hash Wars is very simple:
 * Miners produce blocks in accordance with their hashrate, the blockchain's difficulty, and (naive) Poisson statistics
 * Blocks found by miners propagate through the simulation at a finite speed (of light)
 * Each miner's blockchain obeys the consensus rules around heaviest chain, uncling, difficulty rebalancing, &c.
+* Blockchains do *not* obey the consensus rules around block timestamps; these are easy to fake so we assume they would have been and don't simulate them.
 
 See the code in [`hashwars`](hashwars).
 

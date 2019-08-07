@@ -1,7 +1,8 @@
-from concurrent.futures import ProcessPoolExecutor
-from random import shuffle
+from datetime import datetime, timedelta
+from asyncio import sleep
+from adaptive import Learner2D, Runner
 
-from .utils import notify
+from .utils import notify, format_timestamp, format_duration
 
 def single_static_binary_simulation(namespace, name, distance, hashrate_ratio, simulator_argv):
     simulator = getattr(namespace, name)
@@ -13,33 +14,36 @@ def single_static_binary_simulation(namespace, name, distance, hashrate_ratio, s
     notify("ARGV: {}".format(simulator_argv))
     return simulator((distance, hashrate_ratio, simulator_argv))
     
-def many_static_binary_simulations(namespace, name, count, distances, hashrate_ratios, simulator_argv):
+async def many_static_binary_simulations(namespace, name, distance_bounds, hashrate_ratio_bounds, error_rate):
     simulator = getattr(namespace, name)
     notify("SIMULATION: {}".format(name))
-    notify("DISTANCES: {} - {} ({} total)".format(distances[0], distances[-1], len(distances)))
-    notify("HASHRATE RATIOS: {} - {} ({} total)".format(hashrate_ratios[0], hashrate_ratios[-1], len(hashrate_ratios)))
-    notify("COUNT: {}".format(count))
-    notify("ARGV: {}".format(simulator_argv))
+    notify("DISTANCES: {} - {}".format(distance_bounds[0], distance_bounds[-1]))
+    notify("HASHRATE RATIOS: {} - {}".format(hashrate_ratio_bounds[0], hashrate_ratio_bounds[-1]))
+    notify("ERROR: {}".format(error_rate))
 
-    runs = []
-    for distance in distances:
-        for hashrate_ratio in hashrate_ratios:
-            for run in range(count):
-                runs.append((distance, hashrate_ratio, simulator_argv))
+    learner = Learner2D(simulator, bounds=[distance_bounds, hashrate_ratio_bounds])
 
-    notify("TOTAL RUNS: {}".format(len(runs)))
-    notify("Randomizing runs...")
-    shuffle(runs)
-    notify("Starting simulations...")
-    with ProcessPoolExecutor() as executor:
-        results_list = list(executor.map(simulator, runs))
-        notify("Obtained results...")
-        results_matrix = []
-        for distance in distances:
-            results_row_at_distance = []
-            results_at_distance_list = [result for result in results_list if result[0] == distance]
-            for hashrate_ratio in hashrate_ratios:
-                results_row_at_distance.append([result[2] for result in results_at_distance_list if result[1] == hashrate_ratio])
-            results_matrix.append(results_row_at_distance)
-        notify("Collated results")
-        return (distances, hashrate_ratios, results_matrix)
+    notify("Starting simulation at {}...".format(format_timestamp(datetime.now())))
+    runner = Runner(learner, goal=lambda l: l.loss() < error_rate)
+    while not runner.task.done():
+        await sleep(5)
+        fraction_done = (error_rate / learner.loss())
+        fraction_remaining = 1 - fraction_done
+        now = datetime.now()
+        runtime = runner.elapsed_time()
+        overhead = (runner.overhead() / runtime if runtime > 0 else 0)
+        remaining_time = ((runtime * fraction_remaining) / fraction_done if fraction_done > 0 else 0)
+        eta = now + timedelta(seconds=remaining_time)
+        
+        notify("STATUS: {} samples | {:0.4f}% done | {:0.2f}% overhead | {} runtime | {} remaining | {} ETA".format(
+            len(learner.data), 
+            100 * fraction_done,
+            100 * overhead,
+            format_duration(runtime),
+            format_duration(remaining_time),
+            format_timestamp(eta),
+        ))
+
+    results = learner.data.values()
+    notify("SAMPLED: {}".format(len(results)))
+    return list(results)
